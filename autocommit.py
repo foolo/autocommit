@@ -15,25 +15,37 @@ def main():
     lines = sorted(output.splitlines())
     index_changes: list[GitStatus] = []
     worktree_changes: list[GitStatus] = []
+    untracked_changes: list[GitStatus] = []
     for line in lines:
         status_index = line[0]
         status_wtree = line[1]
         info = line[3:]
-        if status_index != ' ':
-            index_changes.append(GitStatus(status_index, info))
-        if status_wtree != ' ':
-            worktree_changes.append(GitStatus(status_wtree, info))
+        if status_index == '?' and status_wtree == '?':
+            untracked_changes.append(GitStatus(status_index, info))
+        else:
+            if status_index != ' ':
+                index_changes.append(GitStatus(status_index, info))
+            if status_wtree != ' ':
+                worktree_changes.append(GitStatus(status_wtree, info))
 
     if len(worktree_changes) > 0:
         print(f'unstaged changes:')
         for change in worktree_changes:
             print(f'  {change}')
-        user_input = input('Continue with commit? (y/n): ')
-        if user_input.lower() != 'y':
-            return
+        return
+
     if len(index_changes) == 0:
         print('nothing to commit')
         return
+
+    if len(untracked_changes) > 0:
+        print(f'untracked files:')
+        for change in untracked_changes:
+            print(f'  {change}')
+        user_input = input('Continue with commit? (y/n): ')
+        if user_input.lower() != 'y':
+            return
+
     message = ', '.join([(s.status + ' ' + s.info) for s in index_changes])
     print(f'committing: {message}')
     subprocess.run(['git', 'commit', '--message', message], check=True)
